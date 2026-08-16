@@ -1,0 +1,22 @@
+{
+  "name": "perp-mesh-bot",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "lint": "oxlint .",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "ccxt": "4.5.73",
+    "trading-signals": "8.3.0",
+    "ws": "8.21.3"
+  },
+  "devDependencies": {
+    "@types/bun": "1.3.14",
+    "@types/ws": "8.18.1",
+    "oxlint": "1.78.0",
+    "typescript": "5.9.3",
+    "vitest": "4.1.10"
+  }
+}
