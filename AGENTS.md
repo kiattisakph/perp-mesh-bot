@@ -25,6 +25,8 @@ Not in v1: Grid, Maker Points, Basis Arbitrage, Binance Spot, multi-exchange, He
 
 Use **Bun**. Do not add npm/pnpm/yarn lockfiles.
 
+Do **not** add GitHub Actions workflows (`.github/workflows/`). Lint and tests are local: `bun test` and `bun run lint`.
+
 ```bash
 bun install
 bun test
