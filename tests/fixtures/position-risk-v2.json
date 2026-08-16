@@ -1,0 +1,14 @@
+[
+  {
+    "entryPrice": "22185.2",
+    "marginType": "isolated",
+    "leverage": "4",
+    "liquidationPrice": "19731.45529116",
+    "markPrice": "21123.05052574",
+    "positionAmt": "0.001",
+    "symbol": "BTCUSDT",
+    "unRealizedProfit": "-1.06214947",
+    "positionSide": "BOTH",
+    "updateTime": 1655217461579
+  }
+]

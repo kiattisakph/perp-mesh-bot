@@ -1,0 +1,21 @@
+{
+  "clientOrderId": "pmb-limit-1",
+  "cumQty": "0",
+  "cumQuote": "0",
+  "executedQty": "0",
+  "orderId": 283194212,
+  "origQty": "0.001",
+  "origType": "LIMIT",
+  "price": "20000",
+  "reduceOnly": false,
+  "side": "BUY",
+  "positionSide": "BOTH",
+  "status": "NEW",
+  "stopPrice": "0",
+  "closePosition": false,
+  "symbol": "BTCUSDT",
+  "timeInForce": "GTX",
+  "type": "LIMIT",
+  "updateTime": 1571110484038,
+  "workingType": "CONTRACT_PRICE"
+}

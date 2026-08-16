@@ -1,0 +1,12 @@
+{
+  "totalWalletBalance": "23.72469206",
+  "availableBalance": "23.72469206",
+  "assets": [
+    {
+      "asset": "USDT",
+      "walletBalance": "23.72469206",
+      "availableBalance": "23.72469206",
+      "updateTime": 1625474304765
+    }
+  ]
+}

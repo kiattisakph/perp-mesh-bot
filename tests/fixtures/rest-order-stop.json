@@ -1,0 +1,19 @@
+{
+  "clientOrderId": "pmb-stop-1",
+  "cumQty": "0",
+  "executedQty": "0",
+  "orderId": 11,
+  "origQty": "0.001",
+  "origType": "STOP_MARKET",
+  "price": "0",
+  "reduceOnly": true,
+  "side": "SELL",
+  "positionSide": "BOTH",
+  "status": "NEW",
+  "stopPrice": "19000",
+  "symbol": "BTCUSDT",
+  "timeInForce": "GTC",
+  "type": "STOP_MARKET",
+  "updateTime": 1571110484038,
+  "workingType": "MARK_PRICE"
+}
