@@ -1,5 +1,10 @@
 export type { AccountState, FuturesPosition } from "./account";
-export type { OrderIntent } from "./intent";
+export {
+  isEntryIntent,
+  isPlaceIntent,
+  isProtectionIntent,
+} from "./intent";
+export type { OrderIntent, PlaceIntent } from "./intent";
 export type { Candle, MarketTicker, OrderBook, PriceLevel } from "./market";
 export type { OrderSide, OrderStatus, OrderType, TradingOrder } from "./order";
 export { remainingQuantity } from "./order";

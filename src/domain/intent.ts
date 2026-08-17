@@ -49,3 +49,31 @@ export type OrderIntent =
       strategyId: string;
       symbol: string;
     };
+
+export type PlaceIntent = Exclude<
+  OrderIntent,
+  { type: "CANCEL" } | { type: "CANCEL_OWNED" }
+>;
+
+export function isPlaceIntent(intent: OrderIntent): intent is PlaceIntent {
+  return (
+    intent.type === "PLACE_LIMIT" ||
+    intent.type === "PLACE_MARKET" ||
+    intent.type === "PLACE_STOP" ||
+    intent.type === "PLACE_TRAILING_STOP"
+  );
+}
+
+export function isEntryIntent(intent: OrderIntent): boolean {
+  return isPlaceIntent(intent) && intent.reduceOnly === false;
+}
+
+export function isProtectionIntent(intent: OrderIntent): boolean {
+  if (intent.type === "PLACE_STOP" || intent.type === "PLACE_TRAILING_STOP") {
+    return true;
+  }
+  if (intent.type === "PLACE_MARKET" || intent.type === "PLACE_LIMIT") {
+    return intent.reduceOnly === true;
+  }
+  return false;
+}
