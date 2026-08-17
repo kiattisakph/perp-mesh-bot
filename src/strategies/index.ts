@@ -26,3 +26,17 @@ export type {
   TrendResult,
   TrendState,
 } from "./trend";
+export {
+  SWING_STATE_SCHEMA_VERSION,
+  SwingStateError,
+  directionAllows,
+  evaluateSwing,
+  initialSwingState,
+  loadSwingState,
+  parseSwingState,
+  saveSwingState,
+  serializeSwingState,
+  swingConfigFromApp,
+  swingStateFilePath,
+} from "./swing";
+export type { SwingConfig, SwingResult, SwingState } from "./swing";

@@ -14,5 +14,8 @@ dist/
 coverage/
 *.tsbuildinfo
 
+# Runtime strategy state
+data/
+
 # OS
 .DS_Store
