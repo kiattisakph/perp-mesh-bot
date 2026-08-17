@@ -79,6 +79,8 @@ export function testOrder(
     status?: TradingOrder["status"];
     exchangeOrderId?: string;
     strategyId?: string;
+    filledQuantity?: number;
+    updateTime?: number;
   },
 ): TradingOrder {
   const order: TradingOrder = {
@@ -90,9 +92,9 @@ export function testOrder(
     type: input.type ?? "LIMIT",
     status: input.status ?? "NEW",
     quantity: input.quantity ?? 0.001,
-    filledQuantity: 0,
+    filledQuantity: input.filledQuantity ?? 0,
     reduceOnly: input.reduceOnly,
-    updateTime: 1,
+    updateTime: input.updateTime ?? 1,
   };
   if (input.price !== undefined) {
     order.price = input.price;

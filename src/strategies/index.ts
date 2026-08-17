@@ -40,3 +40,25 @@ export {
   swingStateFilePath,
 } from "./swing";
 export type { SwingConfig, SwingResult, SwingState } from "./swing";
+export {
+  CancelReplaceBudget,
+  FillTracker,
+  MakerRuntime,
+  classicDesiredQuotes,
+  evaluateMaker,
+  initialMakerState,
+  liquidityDesiredQuotes,
+  makerConfigForVariant,
+  makerConfigFromApp,
+  makerVariantFromStrategy,
+  offsetDesiredQuotes,
+} from "./maker";
+export type {
+  MakerConfig,
+  MakerFillEvent,
+  MakerQuotingState,
+  MakerResult,
+  MakerState,
+  MakerVariant,
+  RecentFill,
+} from "./maker";

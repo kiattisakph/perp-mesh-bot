@@ -12,6 +12,7 @@ import {
   mapKlineEvent,
   mapListenKeyExpired,
   mapMarkPriceEvent,
+  mapOrderTradeFill,
   mapOrderTradeUpdate,
   mapPositionRisk,
   mapRestOrder,
@@ -121,6 +122,15 @@ describe("canonical mappers", () => {
     expect(partial.filledQuantity).toBe(0.001);
     expect(partial.quantity).toBe(0.002);
     expect(partial.reduceOnly).toBe(false);
+
+    const fill = mapOrderTradeFill(
+      readFixture("order-trade-update-partial.json"),
+    );
+    expect(fill.executionType).toBe("TRADE");
+    expect(fill.lastFilledQuantity).toBe(0.001);
+    expect(fill.lastFillPrice).toBe(20000);
+    expect(fill.averageFillPrice).toBe(20000);
+    expect(fill.order.filledQuantity).toBe(0.001);
   });
 
   it("maps EXPIRED_IN_MATCH to EXPIRED", () => {

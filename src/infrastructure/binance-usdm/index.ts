@@ -35,6 +35,7 @@ export {
   mapKlineEvent,
   mapListenKeyExpired,
   mapMarkPriceEvent,
+  mapOrderTradeFill,
   mapOrderTradeUpdate,
   mapPositionRisk,
   mapRestKlines,

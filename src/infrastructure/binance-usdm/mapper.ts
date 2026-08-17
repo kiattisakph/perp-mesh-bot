@@ -443,6 +443,29 @@ export function applyAccountUpdate(
   };
 }
 
+export function mapOrderTradeFill(
+  payload: unknown,
+  strategyId = "",
+): {
+  order: TradingOrder;
+  executionType: string;
+  lastFilledQuantity: number;
+  lastFillPrice: number;
+  averageFillPrice: number;
+  eventTime: number;
+} {
+  const row = asRecord(payload, "ORDER_TRADE_UPDATE");
+  const order = asRecord(row.o, "o");
+  return {
+    order: mapOrderTradeUpdate(payload, strategyId),
+    executionType: asString(order.x, "x"),
+    lastFilledQuantity: asNumber(order.l, "l"),
+    lastFillPrice: optionalNumber(order.L) ?? 0,
+    averageFillPrice: optionalNumber(order.ap) ?? 0,
+    eventTime: asNumber(row.E, "E"),
+  };
+}
+
 export function mapListenKeyExpired(payload: unknown): boolean {
   const row = asRecord(payload, "listenKeyExpired");
   return row.e === "listenKeyExpired";
