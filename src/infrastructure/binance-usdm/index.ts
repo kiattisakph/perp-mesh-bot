@@ -4,6 +4,10 @@ export type {
   BootstrapInput,
   PublicSubscribeInput,
 } from "./binance-adapter";
+export { PublicMarketStream } from "./public-stream";
+export type { PublicStreamHandlers, PublicStreamOptions } from "./public-stream";
+export { UserDataStream } from "./user-stream";
+export type { UserStreamHandlers, UserStreamOptions } from "./user-stream";
 export {
   DEFAULT_RECV_WINDOW_MS,
   DEPTH_SNAPSHOT_LIMIT,

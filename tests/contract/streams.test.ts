@@ -12,6 +12,7 @@ import {
   type HttpClient,
 } from "../../src/infrastructure/binance-usdm/rest-client";
 import { UserDataStream } from "../../src/infrastructure/binance-usdm/user-stream";
+import { PublicMarketStream } from "../../src/infrastructure/binance-usdm/public-stream";
 import { FakeSocket, fakeWebSocket } from "../helpers/fake-socket";
 import { readFixture } from "../helpers/read-fixture";
 
@@ -219,6 +220,72 @@ describe("stream reconnect", () => {
       "wss://fstream.binancefuture.com/ws/key-2",
     );
     await user.stop();
+  });
+
+  it("injectDisconnect on user and public streams reconnects without a full stop", async () => {
+    FakeSocket.reset();
+    let listenKeys = 0;
+    const http: HttpClient = async (request) => {
+      if (request.url.includes("/fapi/v1/listenKey") && request.method === "POST") {
+        listenKeys += 1;
+        return jsonOk({ listenKey: `key-${listenKeys}` });
+      }
+      if (request.url.includes("/fapi/v1/listenKey")) {
+        return jsonOk({});
+      }
+      if (request.url.includes("/fapi/v1/depth")) {
+        return jsonOk(readFixture("depth-snapshot.json"));
+      }
+      throw new Error(`unexpected ${request.method} ${request.url}`);
+    };
+    const rest = new BinanceRestClient({
+      endpoints: resolveBinanceEndpoints({ testnet: true }),
+      apiKey: "k",
+      apiSecret: "s",
+      http,
+    });
+    let userReconnects = 0;
+    const user = new UserDataStream({
+      wsBase: "wss://fstream.binancefuture.com",
+      rest,
+      webSocket: fakeWebSocket,
+      reconnectMaxMs: 60_000,
+      initialAccount: emptyAccount,
+      handlers: {
+        onReconnect: () => {
+          userReconnects += 1;
+        },
+      },
+      delay: async () => undefined,
+    });
+    await user.start();
+    user.injectDisconnect();
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    expect(userReconnects).toBe(1);
+    expect(listenKeys).toBe(2);
+    await user.stop();
+
+    FakeSocket.reset();
+    let publicReconnects = 0;
+    const publicStream = new PublicMarketStream({
+      symbol: "BTCUSDT",
+      wsBase: "wss://fstream.binancefuture.com",
+      rest,
+      webSocket: fakeWebSocket,
+      reconnectMaxMs: 60_000,
+      mark: true,
+      handlers: {
+        onReconnect: () => {
+          publicReconnects += 1;
+        },
+      },
+      delay: async () => undefined,
+    });
+    await publicStream.start();
+    publicStream.injectDisconnect();
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    expect(publicReconnects).toBe(1);
+    publicStream.stop();
   });
 
   it("maps user-stream account and order updates to domain types", async () => {

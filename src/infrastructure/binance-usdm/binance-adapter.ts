@@ -362,4 +362,17 @@ export class BinanceUsdmAdapter {
     await this.userStream?.stop();
     this.userStream = undefined;
   }
+
+  /**
+   * Soak chaos: drop the live WebSocket without stopping the stream so
+   * reconnect/reconcile can run. Public and user streams reconnect independently.
+   */
+  injectStreamDisconnect(target: "public" | "user" | "both"): void {
+    if (target === "public" || target === "both") {
+      this.publicStream?.injectDisconnect();
+    }
+    if (target === "user" || target === "both") {
+      this.userStream?.injectDisconnect();
+    }
+  }
 }

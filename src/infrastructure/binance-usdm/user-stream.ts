@@ -77,6 +77,11 @@ export class UserDataStream {
     this.listenKey = undefined;
   }
 
+  /** Close the live socket so reconnect runs. Does not mark the stream stopped. */
+  injectDisconnect(): void {
+    this.socket?.close();
+  }
+
   private async connect(): Promise<void> {
     if (this.stopped) {
       return;

@@ -39,3 +39,33 @@ export type {
 } from "./risk-service";
 export { ShutdownService, shutdownIntents } from "./shutdown-service";
 export type { ShutdownContext, ShutdownMode } from "./shutdown-service";
+export {
+  SOAK_MAX_WINDOW_MS,
+  SOAK_MIN_WINDOW_MS,
+  SOAK_STRATEGIES,
+  adapterStreamChaos,
+  auditOrphanOrders,
+  auditPositionMismatch,
+  evaluateSoakChecklist,
+  isExchangeFlat,
+  leakSnapshot,
+  ManualClock,
+  OrderRateTracker,
+  positionQuantityOnAccount,
+  runSoakSession,
+  TrackedClock,
+} from "./soak";
+export type {
+  LeakSnapshot,
+  OrphanOrder,
+  PositionMismatch,
+  SoakChecklistInput,
+  SoakChecklistResult,
+  SoakClock,
+  SoakMetrics,
+  SoakReport,
+  SoakSessionOptions,
+  SoakStreamChaos,
+  SoakWsState,
+  TimerHandle,
+} from "./soak";
