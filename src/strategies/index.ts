@@ -14,3 +14,15 @@ export type {
   GuardianResult,
   GuardianState,
 } from "./guardian";
+export {
+  evaluateTrend,
+  initialTrendState,
+  sameUtcMinute,
+  trendConfigFromApp,
+} from "./trend";
+export type {
+  TrendConfig,
+  TrendPhase,
+  TrendResult,
+  TrendState,
+} from "./trend";

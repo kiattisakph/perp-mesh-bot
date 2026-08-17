@@ -89,16 +89,34 @@ export class FakeVenue implements ExecutionVenue {
     };
     this.exchangeSeq += 1;
     this.orders.set(newClientOrderId, order);
-    if (intent.type === "PLACE_MARKET" && intent.reduceOnly) {
-      const position = this.account.positions.find(
-        (row) => row.symbol === intent.symbol,
-      );
-      if (position !== undefined) {
-        position.quantity = 0;
-        position.unrealizedPnl = 0;
-      }
+    if (intent.type === "PLACE_MARKET") {
       order.status = "FILLED";
       order.filledQuantity = order.quantity;
+      const existing = this.account.positions.find(
+        (row) => row.symbol === intent.symbol,
+      );
+      if (intent.reduceOnly) {
+        if (existing !== undefined) {
+          existing.quantity = 0;
+          existing.unrealizedPnl = 0;
+        }
+      } else {
+        const delta = intent.side === "BUY" ? intent.quantity : -intent.quantity;
+        if (existing === undefined) {
+          this.account.positions.push({
+            symbol: intent.symbol,
+            quantity: delta,
+            entryPrice: 100_000,
+            markPrice: 100_000,
+            unrealizedPnl: 0,
+            leverage: 3,
+            marginMode: "isolated",
+            updateTime: 1,
+          });
+        } else {
+          existing.quantity += delta;
+        }
+      }
     }
     return order;
   }
