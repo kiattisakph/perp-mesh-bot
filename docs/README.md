@@ -35,6 +35,7 @@ The original behavioral specification is [reference/binance-usdtm-strategy-reimp
 | Environment variable names and units | [../.env.example](../.env.example) |
 | Session rules for AI agents | [../AGENTS.md](../AGENTS.md) |
 | Human onboarding | [../README.md](../README.md) |
+| Production start, API key, kill switch | [runbooks/production.md](runbooks/production.md) |
 | Behavioral specification (Thai) | [reference/binance-usdtm-strategy-reimplementation.md](reference/binance-usdtm-strategy-reimplementation.md) |
 
 Official Binance API behavior is defined by [Binance USDT-M docs](https://developers.binance.com/docs/derivatives/usds-margined-futures/general-info). [binance-usdtm.md](binance-usdtm.md) records how this bot uses those APIs.

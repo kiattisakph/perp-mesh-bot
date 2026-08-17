@@ -5,7 +5,8 @@
   "scripts": {
     "lint": "oxlint .",
     "test": "vitest run",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "start": "bun src/cli/index.ts"
   },
   "dependencies": {
     "ccxt": "4.5.73",

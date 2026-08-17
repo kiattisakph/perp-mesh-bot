@@ -4,7 +4,7 @@ PerpMesh Bot is an automated perpetual trading bot for **Binance USDⓈ-M (USDT-
 
 It reimplements a fixed set of strategies as a new codebase: strategy policy stays pure, and only the execution layer talks to Binance.
 
-This repository is **not** ready to trade live capital. Phase 1 (repository tooling) is in place. Runtime, strategy logic, and exchange integration have not been implemented.
+This repository is **not** ready to trade live capital until every item in the [definition of done](docs/product-requirements.md#definition-of-done) is true, including testnet soak and explicit production confirmation.
 
 ## Supported strategies
 
@@ -21,7 +21,7 @@ v1 does **not** include Grid, Maker Points, Basis Arbitrage, Binance Spot, multi
 
 ## Current status
 
-**Phase 1 — Repository setup.** Bun, TypeScript strict, Vitest, oxlint, and CI are wired. Authoritative product and engineering docs live under `docs/`. There is no trading runtime yet.
+Production hardening gates are in place: defaults stay testnet and dry-run; `--read-only` places no orders; production hosts require CLI `--confirm-production`. Operator procedures: [docs/runbooks/production.md](docs/runbooks/production.md).
 
 Constraints already decided for v1:
 
@@ -65,9 +65,13 @@ bun run lint
 bun test
 ```
 
-`bun run start` is not implemented yet.
+`bun run start` applies production gates. Defaults stay dry-run and testnet:
 
-After the GitHub remote exists, apply the [branch protection](.github/branch-protection.md) settings and enable secret scanning / push protection.
+```bash
+bun run start --strategy guardian --symbol BTCUSDT --dry-run --testnet
+```
+
+Production hosts require `BINANCE_TESTNET=false` and `--confirm-production`. Do not treat example config values as sized for a live account.
 
 ## Documentation
 

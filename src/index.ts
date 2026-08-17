@@ -1,4 +1,4 @@
 /**
- * PerpMesh Bot entry. Runtime and trading logic start in later phases.
+ * PerpMesh Bot CLI entry. Production hosts require --confirm-production.
  */
-export {};
+export { main } from "./cli/index";

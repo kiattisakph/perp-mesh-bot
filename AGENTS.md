@@ -33,11 +33,13 @@ bun test
 bun run lint
 ```
 
-Runtime start is not implemented yet:
+Runtime start applies production gates. Defaults stay dry-run / testnet:
 
 ```bash
 bun run start --strategy guardian --symbol BTCUSDT --dry-run --testnet
 ```
+
+`--read-only` starts without placing orders. Production hosts require `BINANCE_TESTNET=false` and `--confirm-production` (not an env var).
 
 ## Coding conventions
 

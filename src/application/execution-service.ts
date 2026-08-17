@@ -96,8 +96,13 @@ export class ExecutionService {
     private readonly ownership: OrderOwnership,
     private readonly log?: ExecutionLog,
     startSequence = 1,
+    private readonly skipPlacesReason?: "read-only" | "dry-run",
   ) {
     this.sequence = startSequence;
+  }
+
+  get placesOrders(): boolean {
+    return this.skipPlacesReason === undefined;
   }
 
   static fromOpenOrders(
@@ -105,12 +110,19 @@ export class ExecutionService {
     ownership: OrderOwnership,
     openOrders: readonly TradingOrder[],
     log?: ExecutionLog,
+    skipPlacesReason?: "read-only" | "dry-run",
   ): ExecutionService {
     const sequence = nextClientOrderSequence(
       openOrders.map((order) => order.clientOrderId),
       ownership,
     );
-    const service = new ExecutionService(venue, ownership, log, sequence);
+    const service = new ExecutionService(
+      venue,
+      ownership,
+      log,
+      sequence,
+      skipPlacesReason,
+    );
     for (const order of openOrders) {
       const parsed = parseOwnedClientOrderId(order.clientOrderId, ownership);
       if (parsed === undefined || !isProtectivePurpose(parsed.purpose)) {
@@ -150,6 +162,17 @@ export class ExecutionService {
       const places = intents.filter(isPlaceIntent);
       for (const intent of cancels) {
         await this.runCancel(intent, context, result);
+      }
+      if (this.skipPlacesReason !== undefined) {
+        for (const intent of places) {
+          result.skipped.push(intent);
+          this.log?.("order_place_skipped", {
+            reason: this.skipPlacesReason,
+            type: intent.type,
+            symbol: intent.symbol,
+          });
+        }
+        return result;
       }
       try {
         for (const intent of places) {

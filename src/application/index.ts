@@ -37,6 +37,35 @@ export type {
   RiskLimits,
   RiskRejectReason,
 } from "./risk-service";
+export { createStrategyLogger, emitStrategyLog } from "./logger";
+export {
+  BackupKillSwitch,
+  CONFIRM_PRODUCTION_FLAG,
+  ProductionConfirmationError,
+  RuntimeMetricsCollector,
+  alertsFromMetrics,
+  emptyRuntimeMetrics,
+  envSatisfiesProductionConfirmation,
+  evaluateProductionChecklist,
+  metricSnapshotLog,
+  prepareStartup,
+  productionHostsAllowlisted,
+  resolveDryRun,
+  resolveProductionAccess,
+  skipPlacesReason,
+} from "./production";
+export type {
+  ApiKeyAttestation,
+  MetricAlert,
+  ProcessSignals,
+  ProductionAccess,
+  ProductionAccessInput,
+  ProductionChecklistInput,
+  ProductionChecklistResult,
+  RuntimeMetrics,
+  StartupMode,
+  WsConnectionState,
+} from "./production";
 export { ShutdownService, shutdownIntents } from "./shutdown-service";
 export type { ShutdownContext, ShutdownMode } from "./shutdown-service";
 export {
