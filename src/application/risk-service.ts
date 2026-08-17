@@ -78,13 +78,48 @@ function liveOrders(context: RiskContext): TradingOrder[] {
   );
 }
 
+function idsRemovedThisBatch(
+  intents: readonly OrderIntent[],
+  context: RiskContext,
+): Set<string> {
+  const ids = new Set<string>();
+  for (const intent of intents) {
+    if (intent.type === "CANCEL") {
+      for (const id of intent.orderIds) {
+        const order = ownedById(id, context);
+        if (order === undefined) {
+          continue;
+        }
+        ids.add(order.clientOrderId);
+        ids.add(order.exchangeOrderId);
+      }
+    }
+    if (intent.type === "CANCEL_OWNED") {
+      for (const order of liveOrders(context)) {
+        if (
+          order.symbol === intent.symbol &&
+          isBotOwned(order.clientOrderId, context.ownership)
+        ) {
+          ids.add(order.clientOrderId);
+          ids.add(order.exchangeOrderId);
+        }
+      }
+    }
+  }
+  return ids;
+}
+
 function duplicateAgainstOrders(
   intent: PlaceIntent,
   orders: readonly TradingOrder[],
   ownership: OrderOwnership,
+  removing: ReadonlySet<string>,
 ): boolean {
   const key = duplicateKeyOf(intent);
   return orders.some((order) => {
+    if (removing.has(order.clientOrderId) || removing.has(order.exchangeOrderId)) {
+      return false;
+    }
     if (!isBotOwned(order.clientOrderId, ownership)) {
       return false;
     }
@@ -150,6 +185,7 @@ function evaluatePlace(
   intent: PlaceIntent,
   context: RiskContext,
   accepted: readonly PlaceIntent[],
+  removing: ReadonlySet<string>,
 ): RiskRejectReason | undefined {
   if (context.precision === undefined) {
     return "unknown_precision";
@@ -193,7 +229,12 @@ function evaluatePlace(
   }
 
   if (
-    duplicateAgainstOrders(intent, liveOrders(context), context.ownership) ||
+    duplicateAgainstOrders(
+      intent,
+      liveOrders(context),
+      context.ownership,
+      removing,
+    ) ||
     accepted.some((prior) =>
       duplicateKeyEquals(duplicateKeyOf(prior), duplicateKeyOf(intent)),
     )
@@ -243,6 +284,7 @@ export function filterIntents(
   const allowed: OrderIntent[] = [];
   const rejected: RejectedIntent[] = [];
   const acceptedPlaces: PlaceIntent[] = [];
+  const removing = idsRemovedThisBatch(intents, context);
 
   for (const intent of intents) {
     if (intent.type === "CANCEL_OWNED") {
@@ -264,7 +306,7 @@ export function filterIntents(
     if (!isPlaceIntent(intent)) {
       continue;
     }
-    const reason = evaluatePlace(intent, context, acceptedPlaces);
+    const reason = evaluatePlace(intent, context, acceptedPlaces, removing);
     if (reason !== undefined) {
       rejected.push({ intent, reason });
       continue;

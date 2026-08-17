@@ -233,6 +233,51 @@ describe("risk service", () => {
     ]);
   });
 
+  it("allows replacing a live stop when the same batch cancels it", () => {
+    const live = testOrder(ownership, {
+      purpose: "stop",
+      sequence: 1,
+      side: "SELL",
+      type: "STOP_MARKET",
+      reduceOnly: true,
+      stopPrice: 98_000,
+      quantity: 0.001,
+    });
+    const replacement = {
+      type: "PLACE_STOP" as const,
+      strategyId: "trend",
+      symbol: "BTCUSDT",
+      side: "SELL" as const,
+      stopPrice: 99_000,
+      quantity: 0.001,
+      reduceOnly: true as const,
+    };
+    const decision = filterIntents(
+      [
+        {
+          type: "CANCEL",
+          strategyId: "trend",
+          orderIds: [live.clientOrderId],
+        },
+        replacement,
+      ],
+      testRiskContext(ownership, {
+        position: longPosition(),
+        account: testAccount(longPosition()),
+        openOrders: [live],
+      }),
+    );
+    expect(decision.rejected).toEqual([]);
+    expect(decision.allowed).toEqual([
+      {
+        type: "CANCEL",
+        strategyId: "trend",
+        orderIds: [live.clientOrderId],
+      },
+      replacement,
+    ]);
+  });
+
   it("rejects session-loss entries and unknown precision places", () => {
     const losing = testAccount(longPosition());
     losing.walletBalance = 980;

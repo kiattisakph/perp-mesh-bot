@@ -83,6 +83,9 @@ export class FakeVenue implements ExecutionVenue {
       updateTime: 1,
       ...(intent.type === "PLACE_LIMIT" ? { price: intent.price } : {}),
       ...(intent.type === "PLACE_STOP" ? { stopPrice: intent.stopPrice } : {}),
+      ...(intent.type === "PLACE_TRAILING_STOP"
+        ? { activationPrice: intent.activationPrice }
+        : {}),
     };
     this.exchangeSeq += 1;
     this.orders.set(newClientOrderId, order);

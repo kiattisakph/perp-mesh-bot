@@ -1,6 +1,7 @@
 import type { OrderIntent, PlaceIntent } from "../domain/intent";
 import { isPlaceIntent } from "../domain/intent";
 import type { TradingOrder } from "../domain/order";
+import { remainingQuantity } from "../domain/order";
 import {
   RateLimitError,
   UnknownExecutionError,
@@ -10,8 +11,10 @@ import {
   buildClientOrderId,
   isBotOwned,
   nextClientOrderSequence,
+  parseOwnedClientOrderId,
   purposeOf,
   type OrderOwnership,
+  type OrderPurpose,
 } from "./ownership";
 
 export type ExecutionLog = (
@@ -36,10 +39,57 @@ function liveStatuses(status: TradingOrder["status"]): boolean {
   return status === "NEW" || status === "PARTIALLY_FILLED";
 }
 
+function isProtectivePurpose(purpose: string): purpose is "stop" | "trail" {
+  return purpose === "stop" || purpose === "trail";
+}
+
+function protectiveIntentFromOrder(
+  order: TradingOrder,
+  fallbackCallbackRate: number | undefined,
+): PlaceIntent | undefined {
+  if (!order.reduceOnly) {
+    return undefined;
+  }
+  const quantity = remainingQuantity(order);
+  if (quantity <= 0) {
+    return undefined;
+  }
+  if (order.type === "STOP_MARKET" && order.stopPrice !== undefined) {
+    return {
+      type: "PLACE_STOP",
+      strategyId: order.strategyId,
+      symbol: order.symbol,
+      side: order.side,
+      stopPrice: order.stopPrice,
+      quantity,
+      reduceOnly: true,
+    };
+  }
+  if (
+    order.type === "TRAILING_STOP_MARKET" &&
+    order.activationPrice !== undefined &&
+    fallbackCallbackRate !== undefined
+  ) {
+    return {
+      type: "PLACE_TRAILING_STOP",
+      strategyId: order.strategyId,
+      symbol: order.symbol,
+      side: order.side,
+      activationPrice: order.activationPrice,
+      callbackRate: fallbackCallbackRate,
+      quantity,
+      reduceOnly: true,
+    };
+  }
+  return undefined;
+}
+
 export class ExecutionService {
   private sequence: number;
   private busy = false;
   private readonly inFlight = new Map<string, TradingOrder>();
+  private readonly lastConfirmedProtective = new Map<OrderPurpose, PlaceIntent>();
+  private canceledThisBatch = new Map<OrderPurpose, PlaceIntent>();
 
   constructor(
     private readonly venue: ExecutionVenue,
@@ -60,7 +110,18 @@ export class ExecutionService {
       openOrders.map((order) => order.clientOrderId),
       ownership,
     );
-    return new ExecutionService(venue, ownership, log, sequence);
+    const service = new ExecutionService(venue, ownership, log, sequence);
+    for (const order of openOrders) {
+      const parsed = parseOwnedClientOrderId(order.clientOrderId, ownership);
+      if (parsed === undefined || !isProtectivePurpose(parsed.purpose)) {
+        continue;
+      }
+      const intent = protectiveIntentFromOrder(order, undefined);
+      if (intent !== undefined) {
+        service.lastConfirmedProtective.set(parsed.purpose, intent);
+      }
+    }
+    return service;
   }
 
   inFlightOrders(): TradingOrder[] {
@@ -75,6 +136,7 @@ export class ExecutionService {
       throw new Error("overlapping execution is not allowed");
     }
     this.busy = true;
+    this.canceledThisBatch = new Map();
     const result: ExecutionResult = {
       placed: [],
       canceled: [],
@@ -89,8 +151,13 @@ export class ExecutionService {
       for (const intent of cancels) {
         await this.runCancel(intent, context, result);
       }
-      for (const intent of places) {
-        await this.runPlace(intent, context, result);
+      try {
+        for (const intent of places) {
+          await this.runPlace(intent, context, result);
+        }
+      } catch (error) {
+        await this.restoreLeftoverProtective(result);
+        throw error;
       }
       return result;
     } finally {
@@ -130,10 +197,15 @@ export class ExecutionService {
       updateTime: 0,
     };
     this.inFlight.set(clientOrderId, inflight);
+    const purpose = purposeOf(intent);
     try {
       const placed = await this.venue.placeFromIntent(intent, clientOrderId);
       this.inFlight.delete(clientOrderId);
       result.placed.push(placed);
+      if (isProtectivePurpose(purpose)) {
+        this.lastConfirmedProtective.set(purpose, intent);
+        this.canceledThisBatch.delete(purpose);
+      }
       this.log?.("order_placed", {
         clientOrderId: placed.clientOrderId,
         symbol: placed.symbol,
@@ -150,6 +222,10 @@ export class ExecutionService {
         this.inFlight.delete(clientOrderId);
         if (queried !== undefined) {
           result.placed.push(queried);
+          if (isProtectivePurpose(purpose)) {
+            this.lastConfirmedProtective.set(purpose, intent);
+            this.canceledThisBatch.delete(purpose);
+          }
           return;
         }
         this.log?.("order_place_unknown", {
@@ -157,13 +233,82 @@ export class ExecutionService {
           symbol: intent.symbol,
         });
         result.skipped.push(intent);
+        await this.restoreProtective(intent, result);
         return;
       }
       this.inFlight.delete(clientOrderId);
+      await this.restoreProtective(intent, result);
       if (error instanceof RateLimitError) {
         throw error;
       }
       throw error;
+    }
+  }
+
+  private async restoreLeftoverProtective(result: ExecutionResult): Promise<void> {
+    const leftover = Array.from(this.canceledThisBatch.values());
+    for (const previous of leftover) {
+      await this.restoreProtective(previous, result);
+    }
+  }
+
+  private previousProtective(purpose: OrderPurpose): PlaceIntent | undefined {
+    return this.canceledThisBatch.get(purpose);
+  }
+
+  private async restoreProtective(
+    failed: PlaceIntent,
+    result: ExecutionResult,
+  ): Promise<void> {
+    const purpose = purposeOf(failed);
+    if (!isProtectivePurpose(purpose)) {
+      return;
+    }
+    const previous = this.previousProtective(purpose);
+    if (previous === undefined) {
+      this.log?.("stop_restore_missing", {
+        symbol: failed.symbol,
+        purpose,
+      });
+      return;
+    }
+    const clientOrderId = buildClientOrderId({
+      ownership: this.ownership,
+      purpose,
+      sequence: this.sequence,
+    });
+    this.sequence += 1;
+    try {
+      const placed = await this.venue.placeFromIntent(previous, clientOrderId);
+      result.placed.push(placed);
+      this.lastConfirmedProtective.set(purpose, previous);
+      this.canceledThisBatch.delete(purpose);
+      this.log?.("stop_restored", {
+        clientOrderId: placed.clientOrderId,
+        symbol: placed.symbol,
+        purpose,
+      });
+    } catch {
+      this.log?.("stop_restore_failed", {
+        symbol: failed.symbol,
+        purpose,
+      });
+    }
+  }
+
+  private rememberCanceledProtective(order: TradingOrder): void {
+    const parsed = parseOwnedClientOrderId(order.clientOrderId, this.ownership);
+    if (parsed === undefined || !isProtectivePurpose(parsed.purpose)) {
+      return;
+    }
+    const confirmed = this.lastConfirmedProtective.get(parsed.purpose);
+    const fallbackRate =
+      confirmed?.type === "PLACE_TRAILING_STOP"
+        ? confirmed.callbackRate
+        : undefined;
+    const intent = confirmed ?? protectiveIntentFromOrder(order, fallbackRate);
+    if (intent !== undefined) {
+      this.canceledThisBatch.set(parsed.purpose, intent);
     }
   }
 
@@ -262,6 +407,7 @@ export class ExecutionService {
         origClientOrderId: order.clientOrderId,
       });
       this.inFlight.delete(order.clientOrderId);
+      this.rememberCanceledProtective(order);
       this.log?.("order_canceled", {
         clientOrderId: canceled.clientOrderId,
         symbol: canceled.symbol,
@@ -280,6 +426,7 @@ export class ExecutionService {
       });
       if (resolved !== undefined && !liveStatuses(resolved.status)) {
         this.inFlight.delete(order.clientOrderId);
+        this.rememberCanceledProtective(order);
         return resolved;
       }
       return undefined;

@@ -75,6 +75,7 @@ export function testOrder(
     quantity?: number;
     price?: number;
     stopPrice?: number;
+    activationPrice?: number;
     status?: TradingOrder["status"];
     exchangeOrderId?: string;
     strategyId?: string;
@@ -98,6 +99,9 @@ export function testOrder(
   }
   if (input.stopPrice !== undefined) {
     order.stopPrice = input.stopPrice;
+  }
+  if (input.activationPrice !== undefined) {
+    order.activationPrice = input.activationPrice;
   }
   return order;
 }
